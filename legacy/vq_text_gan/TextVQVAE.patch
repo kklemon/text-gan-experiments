@@ -1,0 +1,21 @@
+--- /home/kris/git/vq_text_gan/vq_text_gan/models/vq_vae.py
++++ /home/kris/git/vq_text_gan/vq_text_gan/models/vq_vae.py
+@@ -33,16 +33,10 @@
+ 
+         self.embed = nn.Embedding(vocab_size, channel, padding_idx=pad_idx, max_norm=1.0)
+ 
+-        if not isinstance(n_heads, (tuple, list)):
+-            self.n_heads = [n_heads] * self.depth
+-
+-        if not isinstance(n_res_blocks, (tuple, list)):
+-            self.n_res_blocks = [n_res_blocks] * self.depth
+-
+         self.encoders = nn.ModuleList(Encoder(channel, channel, res_channel, n_res_blocks, n_heads)
+-                                      for n_res_blocks, n_heads in zip(self.n_res_blocks, self.n_heads))
++                                      for _ in range(depth))
+         self.decoders = nn.ModuleList(Decoder(channel, channel, res_channel, n_res_blocks, n_heads)
+-                                      for n_res_blocks, n_heads in list(zip(self.n_res_blocks, self.n_heads))[::-1])
++                                      for _ in range(depth))
+ 
+         self.conv_to_quant = nn.ModuleList(nn.Conv1d(channel, vq_embeds_dim, kernel_size=1) for _ in range(depth))
+         self.quant_to_conv = nn.ModuleList(nn.Conv1d(vq_embeds_dim, channel, kernel_size=1) for _ in range(depth))

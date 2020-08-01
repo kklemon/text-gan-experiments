@@ -1,0 +1,18 @@
+--- /home/kris/git/vq_text_gan/vq_text_gan/models/vq_vae.py
++++ /home/kris/git/vq_text_gan/vq_text_gan/models/vq_vae.py
+@@ -7,13 +7,10 @@
+         self.attention = Attention(channel, channel // 4, channel, n_heads=n_heads)
+         self.final = nn.Conv1d(channel, channel, kernel_size=1)
+ 
+-        self.norm1 = ChannelWiseLayerNorm(channel)
+-        self.norm2 = ChannelWiseLayerNorm(channel)
+-
+     def forward(self, input):
+         out = self.first(input)
+-        out = self.norm1(self.res_blocks(out))
+-        out = self.norm2(out + self.attention(out, out))
++        out = self.res_blocks(out)
++        out = out + self.attention(out, out)
+         out = self.final(out)
+         return out
+ 
