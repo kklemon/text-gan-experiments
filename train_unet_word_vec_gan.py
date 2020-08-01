@@ -1,6 +1,5 @@
 import argparse
 import logging
-import time
 from collections import OrderedDict
 
 import numpy as np
@@ -86,7 +85,7 @@ def main(args):
 
     # Spiegel model
     G = Generator(args.latent_size, [args.max_channels] * depth, out_dim=inter_dim, attn_at=attn_at).to(device)
-    D = UNetDiscriminator(16, max_channel=args.max_channels, depth=depth, in_dim=inter_dim, attn_at=attn_at).to(device)
+    D = UNetDiscriminator(32, max_channel=args.max_channels, depth=depth, in_dim=inter_dim, attn_at=attn_at).to(device)
 
     G.apply(init_weights)
     D.apply(init_weights)
@@ -99,8 +98,8 @@ def main(args):
 
     sampling_model = get_sampling_model(G, args.use_ema)
 
-    G_opt = torch.optim.Adam(G.parameters(), lr=args.g_lr, betas=(0.0, 0.99))
-    D_opt = torch.optim.Adam(D.parameters(), lr=args.d_lr, betas=(0.0, 0.99))
+    G_opt = torch.optim.Adam(G.parameters(), lr=args.g_lr, betas=(0.5, 0.999))
+    D_opt = torch.optim.Adam(D.parameters(), lr=args.d_lr, betas=(0.5, 0.999))
 
     z_sample = torch.randn(args.n_sample, args.latent_size, 1).to(device)
 
@@ -134,7 +133,6 @@ def main(args):
     model.train(args.epochs, args.log_every, args.sample_every)
 
 
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--run-name', default='unet-word-vec-gan')
@@ -145,8 +143,8 @@ if __name__ == '__main__':
     parser.add_argument('--seq-length', type=int, default=64)
     parser.add_argument('--max-channels', type=int, default=128)
     parser.add_argument('--batch-size', type=int, default=32)
-    parser.add_argument('--g-lr', type=float, default=5e-5)
-    parser.add_argument('--d-lr', type=float, default=1e-4)
+    parser.add_argument('--g-lr', type=float, default=5e-4)
+    parser.add_argument('--d-lr', type=float, default=1e-3)
     parser.add_argument('--vocab-size', type=int, default=1_000)
     parser.add_argument('--embedding-dim', type=int, default=25)
     parser.add_argument('--latent-size', type=int, default=256)

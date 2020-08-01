@@ -65,7 +65,7 @@ class Generator(nn.Module):
         super().__init__()
 
         #channels = [latent_size] + block_channels
-        channels = [16] * len(block_channels)
+        channels = [32] * len(block_channels)
 
         if attn_at is not None:
             self.attn = SelfAttention(channels[attn_at])
@@ -74,7 +74,7 @@ class Generator(nn.Module):
             self.attn = None
             self.attn_at = None
 
-        self.linear = nn.Linear(latent_size, 4 * 16)
+        self.linear = nn.Linear(latent_size, 4 * 32)
 
         self.blocks = nn.ModuleList()
         for i, (in_channels, out_channels) in enumerate(zip(channels[:-1], channels[1:])):
@@ -84,7 +84,7 @@ class Generator(nn.Module):
 
     def forward(self, input):
         out = self.linear(input.squeeze())
-        out = out.reshape(-1, 16, 4)
+        out = out.reshape(-1, 32, 4)
 
         for i, block in enumerate(self.blocks):
             if self.attn_at == i:
@@ -99,12 +99,12 @@ class UpBlock(nn.Module):
         super().__init__()
 
         self.up = nn.Sequential(
+            activation(),
             conv_transpose(x1_channels, out_channels, kernel_size=4, stride=2, padding=1),
-            activation()
         )
         self.merge = nn.Sequential(
+            activation(),
             conv(out_channels + x2_channels, out_channels, kernel_size=1),
-            activation()
         )
         self.res_block = nn.Sequential(
             ResBlock(out_channels),
@@ -162,10 +162,10 @@ class UNetDiscriminator(nn.Module):
             self.up_blocks.append(UpBlock(ch_for_depth(i), ch_for_depth(i - 1), ch_for_depth(i - 1)))
 
         self.minibatch_std_dev = MinibatchStdDev()
-        self.conv = conv(final_ch + 1, final_ch, kernel_size=1)
+        # self.conv = conv(final_ch + 1, final_ch, kernel_size=1)
 
         self.activation = activation()
-        self.linear = nn.Linear(final_ch, 1)
+        self.linear = nn.Linear(final_ch + 1, 1)
 
     def forward(self, input):
         out = self.first(input)
@@ -182,12 +182,13 @@ class UNetDiscriminator(nn.Module):
                 outputs.append(out)
                 out = self.down_blocks[i](out)
 
-        out = self.minibatch_std_dev(out)
-        out = self.conv(out)
         out = self.activation(out)
+        global_out = self.minibatch_std_dev(out)
+        # out = self.conv(out)
+        # out = self.activation(out)
 
         global_out = self.linear(
-            out.sum([-1])
+            global_out.sum([-1])
         ).squeeze()
 
         outputs = outputs[::-1]
